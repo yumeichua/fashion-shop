@@ -13,7 +13,11 @@ import {
     getFirestore, 
     doc, // get the document
     getDoc, // access the data on the document
-    setDoc // update the date on the document
+    setDoc, // update the date on the document
+    collection,
+    writeBatch,
+    query,
+    getDocs
 } from 'firebase/firestore';
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -45,6 +49,35 @@ export const signInWithNativeEmailAndPassword = async (email, password) => {
 }
 
 export const db = getFirestore();
+
+export const addCollectionAndDocuments = async (collectionKey, objectsToAdd) => {
+    const collectionRef = collection(db, collectionKey);
+    const batch = writeBatch(db);
+
+    objectsToAdd.forEach((object) => {
+        const docRef = doc(collectionRef, object.title.toLowerCase());
+        batch.set(docRef, object)
+    });
+
+    await batch.commit();
+
+    console.log("documents have been inserted!");
+};
+
+export const getCategoriesAndDocuments = async () => {
+    const collectionRef = collection(db, 'categories');
+    const q = query(collectionRef);
+
+    const querySnapshot = getDocs(q);
+    const categoryMap = (await querySnapshot).docs.reduce((acc, docSnapshot) => {
+        const { title, items } = docSnapshot.data();
+        acc[title.toLowerCase()] = items;
+        return acc; 
+    }, {});
+
+    return categoryMap;
+};
+
 export const createUserDocumentFromAuth = async ( userAuth, additionalInformation={} ) => {
     const userDocRef = doc(db, 'users', userAuth.uid);
 
